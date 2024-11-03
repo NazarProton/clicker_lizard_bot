@@ -45,7 +45,6 @@ export async function registerRef(userName, refId) {
 }
 
 export async function completeTasks(user, task) {
-  console.log('user', user);
   const score = useScoreStore();
   const newScore = score.score + task.amount;
   score.setScore(newScore);

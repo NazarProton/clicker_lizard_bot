@@ -5,27 +5,52 @@ const webAppUrl = 'https://clicker-pro-896d5.web.app/';
 
 const bot = new Telegraf(token);
 
-// ID користувача, якому потрібно пересилати контакти
-const targetUserId = 'TARGET_USER_ID';
-
+// Стартове меню з двома кнопками
 bot.command('start', (ctx) => {
   ctx.reply(
-    'Welcome to the Clicker Pro bot! Click the button below to start the game.',
+    'Welcome to the Clicker Pro bot! Choose an option below.',
     Markup.inlineKeyboard([
       Markup.button.webApp('Start', `${webAppUrl}?ref=${ctx.payload}`),
+      Markup.button.callback('Find Contact', 'find_contact'),
     ])
   );
 });
 
-// Обробка повідомлень з контактами
-bot.on('contact', (ctx) => {
-  const contact = ctx.message.contact;
-  const contactInfo = `Ім'я: ${contact.first_name} ${
-    contact.last_name || ''
-  }\nТелефон: ${contact.phone_number}`;
+// Обробка команди find_contact
+bot.action('find_contact', (ctx) => {
+  ctx.reply(
+    "Please send the contact information in the following format:\n\n`Name: Ім'я Прізвище, Phone: +380XXXXXXXXX`",
+    {
+      parse_mode: 'Markdown',
+    }
+  );
+});
 
-  // Надсилання контакту цільовому користувачу
-  bot.telegram.sendMessage(targetUserId, `Новий контакт:\n${contactInfo}`);
+// Обробка текстового повідомлення з контактними даними
+bot.on('text', (ctx) => {
+  const message = ctx.message.text;
+
+  // Перевіряємо формат повідомлення
+  const regex = /Name:\s*(.+),\s*Phone:\s*(\+?\d+)/;
+  const match = message.match(regex);
+
+  if (match) {
+    const [, fullName, phoneNumber] = match;
+    const [firstName, ...lastNameArr] = fullName.split(' ');
+    const lastName = lastNameArr.join(' ');
+
+    // Надсилаємо контакт у формі контактної картки
+    ctx.replyWithContact(phoneNumber, firstName, {
+      last_name: lastName || '',
+    });
+  } else {
+    ctx.reply(
+      "Incorrect format. Please send the contact information as:\n\n`Name: Ім'я Прізвище, Phone: +380XXXXXXXXX`",
+      {
+        parse_mode: 'Markdown',
+      }
+    );
+  }
 });
 
 bot.launch();
